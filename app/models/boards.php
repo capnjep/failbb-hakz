@@ -142,8 +142,15 @@ class Boards {
 			foreach($boards as $board) {
 				// Query second level sub-boards
 				$subchild = DB::table('boards')->where('parent', '=', $board['fid'])->get();
-				foreach($subchild as $child) {
+				if(is_array($subchild) && count($subchild) > 0) {
+					
+					foreach($subchild as $child) {
+						$childlist[] = "" . HTML::link('boards/b/' . $child['navigation_slug'], $child['name']) . "";
+					}
 
+					$subchilds = "<p></p><div style='font-size: 11px;'><strong>Sub Forums:</strong> " . @implode(' - ', $childlist) . "</div>";
+				} else {
+					$subchilds = null;
 				}
 
 				// Count the number of total threads in the board
@@ -161,7 +168,8 @@ class Boards {
 					'description' => $board['description'],
 					'thread_count' => $threadCount,
 					'post_count' => $postCount,
-					'last_post' => $lastPost
+					'last_post' => $lastPost,
+					'sub_childs' => $subchilds
 				);
 			}
 
