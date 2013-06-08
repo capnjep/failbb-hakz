@@ -206,7 +206,7 @@ class Boards {
 					p2.date_posted, p4.username, p4.display_name
 				FROM `hkz_posts` as P1 
 				LEFT JOIN `hkz_posts` as P2 ON `P1`.`reply_to` = `P2`.`pid`
-				LEFT JOIN `hkz_users` as P4 ON `P2`.`author` = `P4`.`uid`
+				LEFT JOIN `hkz_users` as P4 ON `P1`.`author` = `P4`.`uid`
 				WHERE `p1`.`reply_to` = ? ORDER BY `p1`.`date_posted` DESC LIMIT 1", array($id));
 		
 		$lastpost = $lastpost[0];
@@ -215,11 +215,15 @@ class Boards {
 			return "<div align='center'>-</div>";
 		}
 
-		$title = empty($lastpost['topic_m']) ? 
-			$lastpost['topic_r'] . " &gt;&gt; " . substr($lastpost['hash_r'], -10, 10): 
-			$lastpost['topic_m'] . " &gt;&gt; " . substr($lastpost['hash_r'], -10, 10);
+		if($boardMode == true) {
+			$title = empty($lastpost['topic_m']) ? 
+				$lastpost['topic_r'] . " &gt;&gt; " . substr($lastpost['hash_r'], -10, 10): 
+				$lastpost['topic_m'] . " &gt;&gt; " . substr($lastpost['hash_r'], -10, 10);
+		} else {
+			$title = substr($lastpost['hash_r'], 0, 20);
+		}
 
-		$link = isset($laspost['hash_m']) ?
+		$link = isset($lastpost['hash_m']) ?
 			URL::to("boards/t/" . $lastpost['hash_m'] . ".html#hash-" . $lastpost['hash_r']):
 			URL::to("boards/t/" . $lastpost['hash_r'] . ".html#hash-" . $lastpost['hash_r']);
 
@@ -300,7 +304,7 @@ class Boards {
 			
 			$topic = "<strong>" . substr($post['hash'], -10, 10) . "</strong>";
 			$flag = !empty($post['last_ct']) ?  "<img uid='avatar' src='" . asset("img/flags/" . $post['last_ct'] . '.png') . "'/>": '';
-			$avatar = !empty($author['avatar']) ? "<img uid='avatar' src='" . asset("img/avatars/" . $author['avatar']) ."'/>": '';
+			$avatar = !empty($author['avatar']) ? "<img uid='avatar' src='" . asset("img/avatars/" . $author['avatar']) ."' class='img-polaroid' />": '';
 			$display = !empty($author['display_name']) ? HTML::link('user/'.strtolower($author['username']) .'/profile', $author['display_name']): HTML::link('user/'.strtolower($author['username']) .'/profile', $author['username']);
 			$contents = Parser::parseMessage($post['contents']);
 			$posted = Hakz::parseTime($post['date_posted']);
@@ -313,13 +317,13 @@ class Boards {
 			$buttons = is_array($btn) ? "[ " . @implode(' - ', $btn) . " ]" : '';
 
 			$data[] = array(
-				'topic' => $topic,
-				'hash' => $post['hash'],
-				'posted_on' => $posted,
-				'flag' => $flag,
-				'avatar' => $avatar,
-				'display' => $display,
-				'contents' => $contents
+				'topic'		=> $topic,
+				'hash'		=> $post['hash'],
+				'posted_on'	=> $posted,
+				'flag'		=> $flag,
+				'avatar'	=> $avatar,
+				'display'	=> $display,
+				'contents'	=> $contents
 			);
 
 			unset($btn);
