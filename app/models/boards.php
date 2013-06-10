@@ -294,17 +294,19 @@ class Boards {
 
 	/**
 	 * Fetches all posts of a certain thread
-	 * @param int|string ThreadID | sha1 hash
+	 * @param int ThreadID
+	 * @param string SHA1 Hash, Post identifier
 	 * @return template
 	 */
-	public static function fetchThreadPosts($tid) {
-		$posts = !preg_match('/^([a-z0-9]{40})$/', $tid) ?
+	public static function fetchThreadPosts($tid, $hash = '') {
+		$posts = !preg_match('/^([a-z0-9]{40})$/', $tid) && !empty($hash) ?
 			DB::table('posts')
 				->where('reply_to', '=', $tid)
 				->orWhere('pid', $tid)
 				->get():
 			DB::table('posts')
-				->where('hash', '=', $tid)
+				->where('reply_to', '=', $tid)
+				->where('hash', '=', $hash)
 				->get();
 
 
@@ -458,13 +460,14 @@ class Boards {
 
 		// Form the data array to update
 		$data = array(
-			'topic' => Input::post('topic'),
-			'contents' => Input::post(''),
-			'reply_to' => Input::post('reply_to'),
-			'board' => Input::post('board'),
-			'hash' => sha1(Input::post('topic') . time()),
+			'contents' => Input::post('contents'),
+			'edit_data' => $edit
 		);
 
+		DB::table('posts')->update($data)->where('hash', '=', Input::post('hash'));
+		$data = self::fetchThreadPosts(Input::post('reply_to'), Input::post('hash'));
+
+		return $data;
 	}
 
 }

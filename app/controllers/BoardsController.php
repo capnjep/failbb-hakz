@@ -51,4 +51,21 @@ class BoardsController extends BaseController {
 		$content = View::make('boards.thread', $data);
 		echo View::make('hakz.scaffolding')->with(array('content' => $content));
 	}
+
+	/**
+	 * Edits a user post
+	 * @link board/e/{hash}
+	 */
+	private static function alterPost($hash) {
+
+	}
+
+	/**
+	 * Submits a user post
+	 * @link board/p/{board-slug}
+	 */
+	private static function newPost($board) {
+
+	}
+
 }
