@@ -104,13 +104,13 @@ class Boards {
 
 					// Return values for view parsing
 					$threadlist[] = array(
-						'topic' => $thread['topic'],
-						'hash' => $thread['hash'],
-						'posted_on' => $postedOn,
-						'last_post' => $lastPoster,
-						'display_name' => $displayName,
-						'views' => $thread['views'],
-						'replies' => $threadReplies,
+						'topic'			=> $thread['topic'],
+						'hash'			=> $thread['hash'],
+						'posted_on'		=> $postedOn,
+						'last_post'		=> $lastPoster,
+						'display_name'	=> $displayName,
+						'views'			=> $thread['views'],
+						'replies'		=> $threadReplies,
 					);
 				}
 			}
@@ -118,12 +118,12 @@ class Boards {
 
 		// Saturate data
 		$data = array(
-			'fid' => $board['fid'],
-			'name' => $board['name'],
-			'description' => $board['description'],
-			'crumbs' => $crumbs,
-			'children' => $children,
-			'threads' => $threadlist
+			'fid'			=> $board['fid'],
+			'name'			=> $board['name'],
+			'description'	=> $board['description'],
+			'crumbs'		=> $crumbs,
+			'children'		=> $children,
+			'threads'		=> $threadlist
 		);
 
 		return $data;
