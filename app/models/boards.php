@@ -104,13 +104,13 @@ class Boards {
 
 					// Return values for view parsing
 					$threadlist[] = array(
-						'topic'			=> $thread['topic'],
-						'hash'			=> $thread['hash'],
-						'posted_on'		=> $postedOn,
-						'last_post'		=> $lastPoster,
-						'display_name'	=> $displayName,
-						'views'			=> $thread['views'],
-						'replies'		=> $threadReplies,
+						'topic' => $thread['topic'],
+						'hash' => $thread['hash'],
+						'posted_on' => $postedOn,
+						'last_post' => $lastPoster,
+						'display_name' => $displayName,
+						'views' => $thread['views'],
+						'replies' => $threadReplies,
 					);
 				}
 			}
@@ -118,12 +118,12 @@ class Boards {
 
 		// Saturate data
 		$data = array(
-			'fid'			=> $board['fid'],
-			'name'			=> $board['name'],
-			'description'	=> $board['description'],
-			'crumbs'		=> $crumbs,
-			'children'		=> $children,
-			'threads'		=> $threadlist
+			'fid' => $board['fid'],
+			'name' => $board['name'],
+			'description' => $board['description'],
+			'crumbs' => $crumbs,
+			'children' => $children,
+			'threads' => $threadlist
 		);
 
 		return $data;
@@ -281,12 +281,12 @@ class Boards {
 
 		// Return data
 		$data = array(
-			'topic'		=> $thread['topic'],
-			'crumbs'	=> $crumbs,
-			'reply'		=> $reply,
-			'posts'		=> $posts,
-			'hash'		=> $thread['hash'],
-			'posts'		=> $posts
+			'topic'	 => $thread['topic'],
+			'crumbs' => $crumbs,
+			'reply' => $reply,
+			'posts' => $posts,
+			'hash' => $thread['hash'],
+			'posts' => $posts
 		);
 
 		return $data;
@@ -329,13 +329,13 @@ class Boards {
 			$buttons = is_array($btn) ? "[ " . @implode(' - ', $btn) . " ]" : '';
 
 			$data[] = array(
-				'topic'		=> $topic,
-				'hash'		=> $post['hash'],
-				'posted_on'	=> $posted,
-				'flag'		=> $flag,
-				'avatar'	=> $avatar,
-				'display'	=> $display,
-				'contents'	=> $contents
+				'topic' => $topic,
+				'hash' => $post['hash'],
+				'posted_on' => $posted,
+				'flag' => $flag,
+				'avatar' => $avatar,
+				'display' => $display,
+				'contents' => $contents
 			);
 
 			unset($btn);
@@ -434,12 +434,15 @@ class Boards {
 		DB::table('user')->increment('posts')->where('uid', '=', Session::get('uid'));
 		$insert = DB::table('posts')->insertGetId($data);
 
-		// Determine what will the system do about the next process
-		// >> The process will redirect the user if it's a thread, or print it if it's a post
+		/**
+		 * Determine what will the system do about the next process
+		 * >> The process will redirect the user if it's a thread, or print it if it's a post
+		 * >> Template processing will be conducted on the controller instead
+		 */ 
 		if($thread == true) {
-
+			return array('thread' => true, 'pid' => $insert);
 		} else {
-
+			return array('thread' => false, 'pid' => $insert);
 		}
 
 	}
