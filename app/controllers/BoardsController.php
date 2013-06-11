@@ -31,6 +31,22 @@ class BoardsController extends BaseController {
 	}
 
 	/**
+	 * Posts a thread on a specific board
+	 * @param array Post fields
+	 */
+	public function postThread() {
+
+	}
+
+	/**
+	 * Edits a specific post
+	 * @param array Post fields
+	 */
+	public function postEditPost() {
+		
+	}
+
+	/**
 	 * Fetches a specific board
 	 * @link boards/b/{board-slug}
 	 */
@@ -53,7 +69,7 @@ class BoardsController extends BaseController {
 	}
 
 	/**
-	 * Edits a user post
+	 * Edits a user post [AJAX]
 	 * @link board/e/{hash}
 	 */
 	private static function alterPost($hash) {
@@ -61,7 +77,7 @@ class BoardsController extends BaseController {
 	}
 
 	/**
-	 * Submits a user post
+	 * Submits a user post [AJAX]
 	 * @link board/p/{board-slug}
 	 */
 	private static function newPost($board) {
