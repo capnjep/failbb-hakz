@@ -5,3 +5,4 @@
 	* 02 : Altered boolean stand point in 'fetchThreadPosts' for $hash
 	* 03 : Altered 'board.blade.php', on $error boolean stand point
 	* 04 : Altered 'fetchBoard' for returning invalid boards
+	* 05 : Added 'fetchUserPosts'; Altered routes for specification

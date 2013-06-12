@@ -23,14 +23,14 @@ Route::get('boards/t/{thread}.html', function($thread) {
 })->where('thread', '[a-z0-9]{40}');
 
 /**
- * @link boards/p/{board-slug}
+ * @link boards/p/{board-slug} [AJAX]
  */
 Route::get('boards/p/{name}', function($name) {
 	BoardsController::__callFunc('newPost', $name);
 });
 
 /**
- * @link boards/e/{hash-slug}
+ * @link boards/e/{hash-slug} [AJAX]
  */
 Route::get('boards/e/{slug}', function($slug) {
 	BoardsController::__callFunc('alterPost', $slug);

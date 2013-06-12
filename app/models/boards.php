@@ -304,6 +304,21 @@ class Boards {
 	}
 
 	/**
+	 * Fetches a particular user's post
+	 * @param int UserID
+	 * @param int Offset limitation
+	 */
+	public static function fetchUserPosts($uid, $limit = '') {
+		$posts = DB::table('posts')
+			->where('author', '=', $uid)
+			->orderBy('date_posted', 'desc')
+			->take($limit)
+			->get();
+
+		return $posts;
+	}
+
+	/**
 	 * Fetches all posts of a certain thread
 	 * @param int ThreadID
 	 * @param string SHA1 Hash, Post identifier
