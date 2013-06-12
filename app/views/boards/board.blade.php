@@ -12,7 +12,9 @@
 		</div>
 	</div>
 </div>
+@if($error === true)
 
+@else
 <div class='clearfix' style='padding: 10px;'>
 	<div class='float-left'>
 		<h4>{{ $name }}</h4>
@@ -82,3 +84,4 @@ $('#btn-newThread').live('click', function () {
 	});
 });
 </script>
+@endif
