@@ -67,6 +67,17 @@ class Boards {
 		$board = DB::table('boards')->where('navigation_slug', '=', $slug)->first();
 		$permissions = self::fetchPermissions($board['fid']);
 
+		// Check if the board really exists
+		if(!is_array($board)) {
+			$crumbs = self::generateCrumbs(array(
+				0 => array(
+					'name' => 'Invalid Board'
+				)
+			));
+
+			return array('error' => true, 'crumbs' => $crumbs);
+		}
+
 		// Check whether the user's group has view permissions
 		if(is_array($permissions['view']) && $permissions['view'][Session::get('usergroup.gid')] != true) {
 			return Response::view('errors.missing', array(), 404);
@@ -299,7 +310,7 @@ class Boards {
 	 * @return template
 	 */
 	public static function fetchThreadPosts($tid, $hash = '') {
-		$posts = !preg_match('/^([a-z0-9]{40})$/', $tid) && !empty($hash) ?
+		$posts = !preg_match('/^([a-z0-9]{40})$/', $hash) && empty($hash) ?
 			DB::table('posts')
 				->where('reply_to', '=', $tid)
 				->orWhere('pid', $tid)
@@ -373,7 +384,7 @@ class Boards {
 
 	/**
 	 * (FUR) Generate breacd crumbs
-	 * @param int BoardID
+	 * @param int|array BoardID|links to add
 	 * @return array
 	 */
 	public static function generateCrumbs($fid, $add = '') {
@@ -387,18 +398,31 @@ class Boards {
 			}
 		}
 
-		do {
-			$dbc = !is_array($dbc) ? 
-				DB::table('boards')->where('fid', '=', $fid)->select('name', 'parent', 'navigation_slug')->first() :
-				DB::table('boards')->where('fid', '=', $dbc['parent'])->select('name', 'parent', 'navigation_slug')->first();
+		if(is_array($fid)) {
+
+			foreach($fid as $key => $val) {
+				$tpl[$key] = array_key_exists('link', $val) ?
+					"<strong>" . $val['link'] . "</strong>":
+					"<strong>" . $val['name'] . "</strong>";
+			}
+
+		} else {
+
+			// Only do this if $fid is int
+			do {
+				$dbc = !is_array($dbc) ? 
+					DB::table('boards')->where('fid', '=', $fid)->select('name', 'parent', 'navigation_slug')->first() :
+					DB::table('boards')->where('fid', '=', $dbc['parent'])->select('name', 'parent', 'navigation_slug')->first();
 
 
-			$cmb[] = array(
-				'order' => $dbc['parent'],
-				'link' => HTML::link('boards/b/' . strtolower($dbc['navigation_slug']), $dbc['name'])
-			);
+				$cmb[] = array(
+					'order' => $dbc['parent'],
+					'link' => HTML::link('boards/b/' . strtolower($dbc['navigation_slug']), $dbc['name'])
+				);
 
-		} while ($dbc['parent'] != 0);
+			} while ($dbc['parent'] != 0);
+
+		}
 
 		foreach($cmb as $key => $val) {
 			$tpl[$val['order']] = "<strong>".$val['link']."</strong>";
