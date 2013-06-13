@@ -6,3 +6,5 @@
 	* 03 : Altered 'board.blade.php', on $error boolean stand point
 	* 04 : Altered 'fetchBoard' for returning invalid boards
 	* 05 : Added 'fetchUserPosts'; Altered routes for specification
+* 13th, June 2013
+	* 01 : Altered fetchBoards, fetchBoard, fetchThread, for changes in permission stand point
