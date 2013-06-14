@@ -280,8 +280,15 @@ class Boards {
 		->where('hash', '=', $slug)
 		->first();
 
+		// Check if the thread really exists
 		if(!is_array($thread)) {
-			die(View::make('hakz.error'));
+			$crumbs = self::generateCrumbs(array(
+				0 => array(
+					'name' => 'Invalid Thread'
+				)
+			));
+
+			return array('error' => true, 'crumbs' => $crumbs);
 		}
 
 		// Process some queries
@@ -292,6 +299,14 @@ class Boards {
 				'link' => HTML::link('boards/t/' . $thread['hash'] . '.html', $thread['topic'])
 			)
 		));
+
+		// Check the permissions set
+		$permissions = self::fetchPermissions($thread['board']);
+
+		if(is_array($permissions['view']) && $permissions['view'][Session::get('usergroup.gid')] != true) {
+
+		}
+
 
 		$reply = Session::get('usergroup.can_failbb_reply_thread') == true ? true : false; // If the user can reply
 
