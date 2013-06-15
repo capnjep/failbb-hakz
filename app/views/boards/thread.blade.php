@@ -2,6 +2,7 @@
 	<div class='crumbs content bgf_111'>
 		{{ $crumbs }}
 	</div>
+	@if(is_array($posts))
 	<div id='thread_container'>
 		<!-- (S) Thread Replies (S) -->
 		@foreach ($posts as $reply)
@@ -15,6 +16,7 @@
 		@endif
 		<!-- (E) Thread New Reply (E) -->
 	</div>
+	@endif
 </div>
 
 <!-- (S) Thread Javascript (S) -->
