@@ -80,7 +80,13 @@ class Boards {
 
 		// Check whether the user's group has view permissions
 		if(is_array($permissions['view']) && $permissions['view'][Session::get('usergroup.gid')] != true) {
-			return Response::view('errors.missing', array(), 404);
+			$crumbs = self::generateCrumbs(array(
+				0 => array(
+					'name' => 'Invalid Board'
+				)
+			));
+
+			return array('error' => true, 'crumbs' => $crumbs);
 		}
 
 		// Retrieve the board's children
@@ -304,7 +310,13 @@ class Boards {
 		$permissions = self::fetchPermissions($thread['board']);
 
 		if(is_array($permissions['view']) && $permissions['view'][Session::get('usergroup.gid')] != true) {
+			$crumbs = self::generateCrumbs(array(
+				0 => array(
+					'name' => 'Invalid Thread'
+				)
+			));
 
+			return array('error' => true, 'crumbs' => $crumbs);
 		}
 
 
