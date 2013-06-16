@@ -12,4 +12,6 @@
 	* 01 : Altered fetchThread, to check whether or not the thread exists
 * 15th, June 2013
 	* 01 : Altered fetchBoard, fetchThread to display error crumb upon invalid slug query
-	* 02 : Prevent tread.blade.php to show an error by adding if statement
+	* 02 : Prevent thread.blade.php to show an error by adding if statement
+* 16th, June 2013
+	* 01 : Minor changes on fetchThread
