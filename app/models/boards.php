@@ -302,7 +302,7 @@ class Boards {
 		$crumbs = self::generateCrumbs($thread['board'], array(
 			999 => array(
 				'name' => $thread['topic'],
-				'link' => HTML::link('boards/t/' . $thread['hash'] . '.html', $thread['topic'])
+				'link' => URL::to('boards/t/' . $thread['hash'] . '.html', $thread['topic'])
 			)
 		));
 
