@@ -95,6 +95,9 @@ class Boards {
 		// Generate Crumbs
 		$crumbs = self::generateCrumbs($board['fid']);
 
+		// Check whether the user is allowed to post
+		$canPost = $permissions['post'][Session::get('usergroup.gid')] == true ? true : false;
+
 		/**
 		 * Only allow posting and other queries to run on boards not counted as top parent
 		 */
@@ -302,7 +305,8 @@ class Boards {
 		$crumbs = self::generateCrumbs($thread['board'], array(
 			999 => array(
 				'name' => $thread['topic'],
-				'link' => URL::to('boards/t/' . $thread['hash'] . '.html', $thread['topic'])
+				'link' => URL::to('boards/t/' . $thread['hash'] . '.html'),
+				'title' => $thread['topic']
 			)
 		));
 
@@ -444,7 +448,7 @@ class Boards {
 		// Initialize by adding items from the $add variable
 		if(is_array($add)) {
 			foreach($add as $key => $val) {
-				$tpl[$key] = "<strong>" . $val['link'] . "</strong>";
+				$tpl[$key] = "<strong>" . HTML::link($val['link'], $val['title']) . "</strong>";
 			}
 		}
 
@@ -538,13 +542,30 @@ class Boards {
 		// Form the data array to update
 		$data = array(
 			'contents' => Input::post('contents'),
-			'edit_data' => $edit
+			'edit_data' => json_encode($edit)
 		);
 
 		DB::table('posts')->update($data)->where('hash', '=', Input::post('hash'));
 		$data = self::fetchThreadPosts(Input::post('reply_to'), Input::post('hash'));
 
 		return $data;
+	}
+
+	/**
+	 * Returns as invalid whenever there's a mismatch
+	 * @param boolean $mode [board(def)|thread]
+	 * @return template
+	 */
+	public static function invalidHandler($mode = true) {
+		$head = $mode == true ? 'Invalid Board' : 'Invalid Thread';
+
+		$crumbs = self::generateCrumbs(array(
+				0 => array(
+					'name' => $head
+				)
+		));
+
+		return array('error' => true, 'crumbs' => $crumbs);
 	}
 
 }
