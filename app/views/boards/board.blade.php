@@ -51,11 +51,10 @@
 	<!-- Threads Container -->
 	<table width='100%' id='thread_table'>
 		<thead class='bgf_111' align='left'>
-			<th width='40%' colspan='2'>Topic</th>
-			<th width='15%'>Author</th>
+			<th width='45%' colspan='2'>Topic</th>
 			<th width='10%'>Views</th>
 			<th width='10%'>Replies</th>
-			<th width='25%'>Latest Post</th>
+			<th width='30%'>Latest Post</th>
 		</thead>
 		<tbody>
 			@foreach ($threads as $thread)
