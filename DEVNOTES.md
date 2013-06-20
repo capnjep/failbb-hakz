@@ -19,3 +19,5 @@
 	* 01 : Added function 'invalidHandler'
 	* 02 : Altered generateCrumbs in handling array inputs
 	* 03 : Altered list-threads.blade.php, board.blade.php to display equal table proportions
+* 18th, June 2013
+	* 01 : Altered 'fetchLastPost' to fix MySQL aliasing
