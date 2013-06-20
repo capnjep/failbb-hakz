@@ -234,18 +234,18 @@ class Boards {
 	public static function fetchLastPost($id, $boardMode = true) {
 		
 		$lastpost = $boardMode == true ? 
-			DB::select("SELECT p1.hash hash_r, p1.topic topic_r, p2.topic topic_m,
-					p2.hash hash_m, p1.date_posted, p4.username, p4.display_name
+			DB::select("SELECT `P1`.`hash` hash_r, `P1`.`topic` topic_r, `P2`.`topic` topic_m,
+					`P2`.`hash` hash_m, `P1`.`date_posted`, `P4`.`username`, `P4`.`display_name`
 				FROM `hkz_posts` as P1
 				LEFT JOIN `hkz_posts` as P2 ON (`P1`.`reply_to` = `P2`.`pid`)
 				LEFT JOIN `hkz_users` as P4 ON `P1`.`author` = `P4`.`uid`
-				WHERE `p1`.`board` = ? ORDER BY `p1`.`date_posted` DESC LIMIT 1", array($id)): 
-			DB::select("SELECT p1.hash hash_r, p2.topic topic_m, p2.hash hash_m,
-					p2.date_posted, p4.username, p4.display_name
+				WHERE `P1`.`board` = ? ORDER BY `P1`.`date_posted` DESC LIMIT 1", array($id)): 
+			DB::select("SELECT `P1`.`hash` hash_r, `P2`.`topic` topic_m, `P2`.`hash` hash_m,
+					`P2`.`date_posted`, `P4`.`username`, `P4`.`display_name`
 				FROM `hkz_posts` as P1 
 				LEFT JOIN `hkz_posts` as P2 ON `P1`.`reply_to` = `P2`.`pid`
 				LEFT JOIN `hkz_users` as P4 ON `P1`.`author` = `P4`.`uid`
-				WHERE `p1`.`reply_to` = ? ORDER BY `p1`.`date_posted` DESC LIMIT 1", array($id));
+				WHERE `P1`.`reply_to` = ? ORDER BY `P1`.`date_posted` DESC LIMIT 1", array($id));
 		
 		$lastpost = $lastpost[0];
 
