@@ -4,6 +4,6 @@
 	</header>
 
 	<section>
-		By {{ $user}}, on {{ $date }}
+		By {{ HTML::link($user_link, $user) }}, on {{ $date }}
 	</section>
 </div>

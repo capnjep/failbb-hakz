@@ -4,6 +4,7 @@
 </div>
 
 <!-- Children boards (S) -->
+@if(is_array($children[$fid]))
 <div style='padding: 10px; background: rgba(0, 0, 0, 0.5);'>
 	<table width='100%'>
 		<thead align='left'>
@@ -19,4 +20,5 @@
 		</tbody>
 	</table>
 </div>
+@endif
 <!-- Children boards (E) -->
