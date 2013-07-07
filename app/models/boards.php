@@ -128,7 +128,8 @@ class Boards {
 						'hash' => $thread['hash'],
 						'posted_on' => $postedOn,
 						'last_post' => $lastPoster,
-						'display_name' => $displayName,
+						'user' => $displayName,
+						'user_link' => URL::to('user/' . strtolower($author['username']) . '/profile'),
 						'views' => $thread['views'],
 						'replies' => $threadReplies,
 					);
@@ -271,6 +272,7 @@ class Boards {
 			'link' => $link,
 			'date' => Hakz::parseTime($lastpost['date_posted']),
 			'user' => $displayname,
+			'user_link' => URL::to('user/' . strtolower($lastpost['username']) . '/profile'),
 			'title' => $title
 		);
 
@@ -347,14 +349,40 @@ class Boards {
 	 * @param int UserID
 	 * @param int Offset limitation
 	 */
-	public static function fetchUserPosts($uid, $limit = '') {
-		$posts = DB::table('posts')
+	public static function fetchUserPosts($uid, $limit = '', $permission = false) {
+		$query = DB::table('posts')
 			->where('author', '=', $uid)
 			->orderBy('date_posted', 'desc')
 			->take($limit)
 			->get();
 
+		// If permission based is turned on
+		if($permission) {
+			foreach($query as $post) {
+				$permissions = self::fetchPermissions($post['board']);
+
+				if(is_array($permissions['view']) && $permissions['view'][Session::get('usergroup.gid')] == true) {
+					$posts[] = $post;
+				}
+			}
+		} else {
+			$posts = $query;
+		}
+
 		return $posts;
+	}
+
+	/**
+	 * Fetch a number of posts
+	 * @param int $limit number of items to display
+	 */
+	public static function fetchNumberOfPosts($limit = 5) {
+		$query = DB::table('posts')
+			->orderBy('date_posted', 'desc')
+			->take($limit)
+			->get();
+
+		return $query;
 	}
 
 	/**
