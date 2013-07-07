@@ -7,33 +7,40 @@
  * @package Routes
  */
 
-
 /**
- * @link boards/b/{board-slug}
+ * Discussion Board Routes
+ * @link boards/*
  */
-Route::get('boards/b/{name}', function($name) {
-	BoardsController::__callFunc('fetchBoard', $name);
-})->where('name', '[a-z\-]+');
+Route::group(array('prefix' => 'boards'), function () {
 
-/**
- * @link boards/t/{hash-slug}.html
- */
-Route::get('boards/t/{thread}.html', function($thread) {
-	BoardsController::__callFunc('fetchThread', $thread);
-})->where('thread', '[a-z0-9]{40}');
+	/**
+	 * @link boards/b/{board-slug}
+	 */
+	Route::get('b/{name}', function($name) {
+		BoardsController::__callFunc('fetchBoard', $name);
+	})->where('name', '[a-z\-]+');
 
-/**
- * @link boards/p/{board-slug} [AJAX]
- */
-Route::get('boards/p/{name}', function($name) {
-	BoardsController::__callFunc('newPost', $name);
+	/**
+	 * @link boards/t/{sha1_hash}.html
+	 */
+	Route::get('t/{thread}.html', function($thread) {
+		BoardsController::__callFunc('fetchThread', $thread);
+	})->where('thread', '[a-z0-9]{40}');
+
+	/**
+	 * @link boards/p/{board-slug} [AJAX]
+	 */
+	Route::get('p/{name}', function($name) {
+		BoardsController::__callFunc('newPost', $name);
+	})->where('name', '[a-z0-9A-Z\-]');
+
+	/**
+	 * @link boards/e/{hash-slug} [AJAX]
+	 */
+	Route::get('e/{slug}', function($slug) {
+		BoardsController::__callFunc('alterPost', $slug);
+	})->where('thread', '[a-z0-9]{40}');
+
 });
-
-/**
- * @link boards/e/{hash-slug} [AJAX]
- */
-Route::get('boards/e/{slug}', function($slug) {
-	BoardsController::__callFunc('alterPost', $slug);
-})->where('thread', '[a-z0-9]{40}');
 
 Route::controller('boards', 'BoardsController');
