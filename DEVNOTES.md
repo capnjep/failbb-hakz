@@ -1,5 +1,20 @@
 # Development Notes
 
+* 18th, August 2013
+	* 01 : File : BoardsController.php
+		* Furnished __callFunc
+		* Furnished "new thread" (c/m)Function
+		* Furnished "new reply" (c/m)Function
+	* 02 : File : Boards.php
+		* Furnished fetchBoards for efficiency
+		* Furnished querying of permissions, get from Cache after being called once
+		* Furnished redirect mechanism for fetchLastPost pointing it to the correct page
+		* Added thread pagination
+		* Added pre-process function before posting
+	* 03 : File : routes.php
+		* Furnished routes.php
+	* 04 : Folder : views/*
+		* Furnished views
 * 7th, July 2013
 	* 01 : File : Boards.php
 		* Altered fetchUserPosts to enable permission settings
