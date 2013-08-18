@@ -8,12 +8,18 @@
 		<div class='pull-right'>
 			<div class='content'>
 				{{ $pagination }}
+				@if($can_post == true)
+					<button uid='new-thread' fid='{{ $fid }}' class='btn btn-mini btn-inverse'>Post Thread</button>
+				@endif
 			</div>
 		</div>
 	</div>
 </div>
 @if($error === true)
-
+<div style='text-align: center'>
+	<p><h1>404? Go Die.</h1>
+		<img src="{{ asset('img/404.png') }}" /></p>
+</div>
 @else
 <div class='clearfix' style='padding: 10px;'>
 	<div class='float-left'>
@@ -25,7 +31,7 @@
 	</div>
 </div>
 
-<div id='thread_container'>
+<div uid='bmain-container' fid='{{ $fid }}'>
 	<!-- Sub-boards of the parent -->
 	@if(is_array($children))
 	<div class='bgf_000'>
@@ -70,15 +76,13 @@
 <script>
 $('title').prepend('{{ $name }} - ');
 
-$('#btn-newThread').live('click', function () {
+$('[uid="new-thread"]').on('click', function () {
 	var fid = $(this).attr('fid');
 
-	$('#thread_container').fadeOut('1000', function () { // Fades out the current content
-		$('#thread_container').html(loader); // Shows the loader
-		$('#thread_container').fadeIn('1000', function () {
-			$.post("boards/new_thread", {'fid':fid}, function(data) { // Send the data
-				$('#thread_container').html(data); // Display template
-			});
+	$('[uid="bmain-container"]').fadeOut('1000', function () { // Fades out the current content
+		$.post("{{ URL::to('boards/p/' . $slug) }}", {'_token':'<?php echo csrf_token(); ?>'}, function (data) {
+			$('[uid="bmain-container"]').html(data);
+			$('[uid="bmain-container"]').fadeIn(500);
 		});
 	});
 });

@@ -1,18 +1,25 @@
 <div>
 	<div class='crumbs content bgf_111'>
-		{{ $crumbs }}
+		<div class='clearfix'>
+			<div class='pull-left'>
+				{{ $crumbs }}
+			</div>
+			<div class='pull-right'>
+				{{ $posts['links'] }}
+			</div>
+		</div>
 	</div>
 	@if(is_array($posts))
 	<div id='thread_container'>
 		<!-- (S) Thread Replies (S) -->
-		@foreach ($posts as $reply)
+		@foreach ($posts['posts'] as $reply)
 				{{ View::make('boards.list-posts')->with('post', $reply) }}
 		@endforeach
 		<!-- (E) Thread Replies (E) -->
 
 		<!-- (S) Thread New Reply (S) -->
-		@if ( $reply != true )
-			{{ View::make('boards.new-reply')->with(array('fid' => $fid, 'hash' => $hash)) }}
+		@if ( $reply == true && Session::has('loggedIn') == true)
+			{{ View::make('boards.new-reply')->with(array('fid' => $board, 'hash' => $hash)) }}
 		@endif
 		<!-- (E) Thread New Reply (E) -->
 	</div>
@@ -24,7 +31,7 @@
 $('title').prepend('{{ $topic }} - ');
 
 // Edit the post
-$('[uid="btn-edit"]').live('click', function () {
+$('[uid="btn-edit"]').on('click', function () {
 	var postHash = $(this).attr('hash');
 	$.post('boards/edit', {'hash':postHash}, function (data) {
 		$('#post-' + postHash).html(data);
