@@ -22,36 +22,22 @@ class Boards {
 	 * @return mixed
 	 */
 	public static function fetchBoards() {
-		// Fetch all the parent boards
-		if(Cache::has('q.allBoards') != true) {
-			$boards = DB::table('boards')->where('parent', '=', 0)->get();
-			Cache::put('q.allBoards', json_encode($boards), 10);
-		} else {
-			$boards = json_decode(Cache::get('q.allBoards'), true);
-		}
+		$boards = Session::get('accessibleBoards');
 
-		$tpl = '';
 
-		// Query all their subchilds individually
-		if(is_array($boards)) {
-			foreach($boards as $parent) {
-				$permissions = Hakz::parseSerial($parent['permissions'], 'decode')['view'];
+		foreach($boards as $parent) {
+			// Retrieve children board
+			$children = self::fetchBoardChild($parent['fid']);
 
-				if(array_key_exists(Session::get('usergroup.gid'), $permissions) && $permissions[Session::get('usergroup.gid')] == true) {
-					// Retrieve children board
-					$children = self::fetchBoardChild($parent['fid']);
+			// Form the data array
+			$data = array(
+				'fid' => $parent['fid'],
+				'name' => $parent['name'],
+				'description' => $parent['description'],
+				'children' => $children
+			);
 
-					// Form the data array
-					$data = array(
-						'fid' => $parent['fid'],
-						'name' => $parent['name'],
-						'description' => $parent['description'],
-						'children' => $children
-					);
-
-					$tpl .= View::make('boards.categories', $data);
-				}
-			}
+			$tpl .= View::make('boards.categories', $data);
 		}
 
 		return $tpl;
@@ -65,7 +51,7 @@ class Boards {
 	public static function fetchBoard($slug) {
 
 		$board = DB::table('boards')->where('navigation_slug', '=', $slug)->first();
-		$permissions = self::fetchPermissions($board['fid']);
+		$permissions = !Cache::has("permissions-{$board['fid']}") ? self::fetchPermissions($board['fid']) : Cache::get("permissions-{$board['fid']}");
 
 		// Check if the board really exists
 		if(!is_array($board)) {
@@ -95,15 +81,12 @@ class Boards {
 		// Generate Crumbs
 		$crumbs = self::generateCrumbs($board['fid']);
 
-		// Check whether the user is allowed to post
-		$canPost = $permissions['post'][Session::get('usergroup.gid')] == true ? true : false;
-
 		/**
 		 * Only allow posting and other queries to run on boards not counted as top parent
 		 */
 		if($board['parent'] != 0) {
 			// Check post permissions
-			$canPost = $usergroup['can_failbb_post'] == true && $permissions['post'][$usergroup['gid']] == true ? true : false;
+			$canPost = Session::get('usergroup.can_failbb_post') == true && $permissions['post'][Session::get('usergroup.gid')] == true ? true : false;
 
 			// Retrieve the board's threads
 			$threads = self::fetchBoardThreads($board['fid']);
@@ -111,6 +94,9 @@ class Boards {
 				foreach($threads as $thread) {
 					// Query the last poster of the thread
 					$lastPoster = self::fetchLastPost($thread['pid'], false);
+
+					// Check whether the user is allowed to post
+					$canPost = $permissions['post'][Session::get('usergroup.gid')] == true ? true : false;
 
 					// Query the author of the thread
 					$author = DB::table('users')->select('username', 'display_name')->where('uid', '=', $thread['author'])->first();
@@ -142,9 +128,11 @@ class Boards {
 			'fid' => $board['fid'],
 			'name' => $board['name'],
 			'description' => $board['description'],
+			'slug' => $board['navigation_slug'],
 			'crumbs' => $crumbs,
 			'children' => $children,
-			'threads' => $threadlist
+			'threads' => $threadlist,
+			'can_post' => $canPost
 		);
 
 		return $data;
@@ -163,14 +151,19 @@ class Boards {
 			foreach($boards as $board) {
 				// Resets data
 				$subchilds = null;
+
 				// Get Permissions
-				$permissions = empty($board['permissions']) ?
-					self::fetchPermissions($board['fid']):
-					Hakz::parseSerial($board['permissions'], 'decode');
-
-				if(!array_key_exists(Session::get('usergroup.gid'), $permissions['view']) && $permissions['view'][Session::get('usergroup.gid')] != true) {
-
+				
+				if(empty($board['permissions'])) {
+					$fid = $board['fid'];
+					$permissions = Cache::remember(sha1($fid), 30, function () use ($fid) {
+						return Boards::fetchPermissions($fid);
+					});
 				} else {
+					$permissions = Hakz::parseSerial($board['permissions'], 'decode');
+				}
+
+				if(array_key_exists(Session::get('usergroup.gid'), $permissions['view']) && $permissions['view'][Session::get('usergroup.gid')] == true) {
 					// Query second level sub-boards
 					$subchild = DB::table('boards')->where('parent', '=', $board['fid'])->get();
 					if(is_array($subchild) && count($subchild) > 0) {
@@ -235,13 +228,13 @@ class Boards {
 	public static function fetchLastPost($id, $boardMode = true) {
 		
 		$lastpost = $boardMode == true ? 
-			DB::select("SELECT `P1`.`hash` hash_r, `P1`.`topic` topic_r, `P2`.`topic` topic_m,
+			DB::select("SELECT `P1`.`hash` hash_r, `P1`.`topic` topic_r, `P2`.`pid`, `P2`.`topic` topic_m,
 					`P2`.`hash` hash_m, `P1`.`date_posted`, `P4`.`username`, `P4`.`display_name`
 				FROM `hkz_posts` as P1
 				LEFT JOIN `hkz_posts` as P2 ON (`P1`.`reply_to` = `P2`.`pid`)
 				LEFT JOIN `hkz_users` as P4 ON `P1`.`author` = `P4`.`uid`
 				WHERE `P1`.`board` = ? ORDER BY `P1`.`date_posted` DESC LIMIT 1", array($id)): 
-			DB::select("SELECT `P1`.`hash` hash_r, `P2`.`topic` topic_m, `P2`.`hash` hash_m,
+			DB::select("SELECT `P1`.`hash` hash_r, `P2`.`topic` topic_m, `P2`.`pid`, `P2`.`hash` hash_m,
 					`P2`.`date_posted`, `P4`.`username`, `P4`.`display_name`
 				FROM `hkz_posts` as P1 
 				LEFT JOIN `hkz_posts` as P2 ON `P1`.`reply_to` = `P2`.`pid`
@@ -249,10 +242,13 @@ class Boards {
 				WHERE `P1`.`reply_to` = ? ORDER BY `P1`.`date_posted` DESC LIMIT 1", array($id));
 		
 		$lastpost = $lastpost[0];
+		$postcount = DB::table('posts')
+			->where('reply_to', '=', $lastpost['pid'])
+			->orWhere('pid', '=', $lastpost['pid'])
+			->count();
+		$page = ceil($postcount / Config::get('failbb.items')); // Global settings would be on /app/config/failbb.php
 
-		if(!is_array($lastpost)) { 
-			return "<div align='center'>-</div>";
-		}
+		if(!is_array($lastpost)) return "<div align='center'>-</div>";
 
 		if($boardMode == true) {
 			$title = empty($lastpost['topic_m']) ? 
@@ -262,9 +258,11 @@ class Boards {
 			$title = substr($lastpost['hash_r'], 0, 20);
 		}
 
+		$insert = $page > 1 ? "?page={$page}#hash-" . $lastpost['hash_r'] : "#hash-" . $lastpost['hash_r'];
+
 		$link = isset($lastpost['hash_m']) ?
-			URL::to("boards/t/" . $lastpost['hash_m'] . ".html#hash-" . $lastpost['hash_r']):
-			URL::to("boards/t/" . $lastpost['hash_r'] . ".html#hash-" . $lastpost['hash_r']);
+			URL::to("boards/t/" . $lastpost['hash_m'] . ".html{$insert}"):
+			URL::to("boards/t/" . $lastpost['hash_r'] . ".html{$insert}");
 
 		$displayname = !empty($lastpost['display_name']) ? $lastpost['display_name'] : $lastpost['username']; 
 
@@ -334,6 +332,7 @@ class Boards {
 		// Return data
 		$data = array(
 			'topic'	 => $thread['topic'],
+			'board' => $thread['board'],
 			'crumbs' => $crumbs,
 			'reply' => $reply,
 			'posts' => $posts,
@@ -396,11 +395,11 @@ class Boards {
 			DB::table('posts')
 				->where('reply_to', '=', $tid)
 				->orWhere('pid', $tid)
-				->get():
+				->paginate(Config::get('failbb.items')):
 			DB::table('posts')
 				->where('reply_to', '=', $tid)
 				->where('hash', '=', $hash)
-				->get();
+				->paginate(Config::get('failbb.items'));
 
 
 		foreach($posts as $post) {
@@ -435,7 +434,7 @@ class Boards {
 		}
 
 
-		return $data;
+		return array('posts' => $data, 'links' => $posts->links());
 	}
 
 	/**
@@ -460,7 +459,11 @@ class Boards {
 			} while (!empty($parentBoard['permissions']) || $parentBoard['parent'] != 0);
 		}
 
-		return Hakz::parseSerial($board['permissions'], 'decode');
+		$data = Hakz::parseSerial($board['permissions'], 'decode');
+		// Cache it
+		if(!Cache::has(sha1($fid))) Cache::put(sha1($fid), $data, 30);
+
+		return $data;
 	}
 
 
@@ -515,41 +518,40 @@ class Boards {
 	}
 
 	/**
-	 * Creates a new thread to a certain board
+	 * Creates a new (thread/reply) to a certain (board/thread)
 	 * @param array Post parameters
 	 * @return array
 	 */
 	public static function newPost() {
 
+		$hash = Input::has('topic') ? sha1(Input::get('topic') . time()) : sha1(time());
+
 		// Form the data array to insert
 		$data = array(
 			'author' => Session::get('uid'),
-			'hash' => sha1(Input::post('topic') . time()),
-			'board' => Input::post('board'),
-			'contents' => Input::post('contents'),
+			'hash' => $hash,
+			'board' => Input::get('fid'),
+			'contents' => Input::get('contents'),
+			'date_posted' => time(),
 			'ip' => $_SERVER['REMOTE_ADDR']
 		);
 
 		// Additional processing
 		if(Input::has('topic') == true) {
-			$thread = true;
-			$data = array_merge($data, array('topic' => Input::post('topic')));
+			$data = array_merge($data, array('topic' => Input::get('topic')));
+		}
+
+		if(Input::has('hash') == true) {
+			$thread = DB::table('posts')->select('pid')->where('hash', '=', Input::get('hash'))->first();
+			$data = array_merge($data, array('reply_to' => $thread['pid']));
 		}
 
 		// Perm the insert query
-		DB::table('user')->increment('posts')->where('uid', '=', Session::get('uid'));
+		DB::table('users')->where('uid', '=', Session::get('uid'))->increment('posts');
 		$insert = DB::table('posts')->insertGetId($data);
 
-		/**
-		 * Determine what will the system do about the next process
-		 * >> The process will redirect the user if it's a thread, or print it if it's a post
-		 * >> Template processing will be conducted on the controller instead
-		 */ 
-		if($thread == true) {
-			return array('thread' => true, 'pid' => $insert);
-		} else {
-			return array('thread' => false, 'pid' => $insert);
-		}
+		$return = !is_array($thread) ? array('pid' => $insert, 'hash' => $hash) : array('thash' => Input::get('hash'), 'hash' => $hash, 'reply_to' => $thread['pid']);
+		return $return;
 
 	}
 
@@ -594,6 +596,39 @@ class Boards {
 		));
 
 		return array('error' => true, 'crumbs' => $crumbs);
+	}
+
+	/**
+	 * Pre-processes a new thread template
+	 * @param string $slug Board slug
+	 * @param mixed
+	 */
+	public static function preNewThread($slug) {
+		return DB::table('boards')
+			->select('fid', 'navigation_slug')
+			->where('navigation_slug', '=', $slug)
+			->first();
+	}
+
+	/**
+	 * Sets accessible boards for the current usergroup
+	 * @param void
+	 * @return array
+	 */
+	public static function setAccessibleBoards() {
+		$boards = json_decode(Cache::get('allBoards'), true);
+
+		foreach($boards as $board) {
+			$permissions = Hakz::parseSerial($board['permissions'], 'decode')['view'];
+
+			if(array_key_exists(Session::get('usergroup.gid'), $permissions) && $permissions[Session::get('usergroup.gid')] == true) {
+				$boardList[] = $board;
+			}
+		}
+
+		Session::put('accessibleBoards', $boardList);
+
+		return true;
 	}
 
 }
