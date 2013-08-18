@@ -15,7 +15,7 @@ class BoardsController extends BaseController {
 	 * @param string Parameters
 	 */
 	public static function __callFunc($method, $params) {
-		$params = is_array($param) ? implode('\'', $params) : $params;
+		$params = is_array($param) ? implode('\', \'', $params) : $params;
 		eval("self::$method('$params');");
 	}
 
@@ -28,22 +28,6 @@ class BoardsController extends BaseController {
 
 		$content = View::make('boards.index', array('content' => $data));
 		return $this->layout->with(array('content' => $content));
-	}
-
-	/**
-	 * Posts a thread on a specific board
-	 * @param array Post fields
-	 */
-	public function postThread() {
-
-	}
-
-	/**
-	 * Edits a specific post
-	 * @param array Post fields
-	 */
-	public function postEditPost() {
-		
 	}
 
 	/**
@@ -77,11 +61,36 @@ class BoardsController extends BaseController {
 	}
 
 	/**
-	 * Submits a user post [AJAX]
-	 * @link board/p/{board-slug}
+	 * Adds a new reply to a thread [AJAX]
+	 * @link board/r/{thread-hash}
 	 */
-	private static function newPost($board) {
+	private static function newReply($hash) {
+		$return = Boards::newPost();
+		$reply = Boards::fetchThreadPosts($return['reply_to'], $return['hash']);
 
+		$postcount = DB::table('posts')->where('reply_to', '=', $return['reply_to'])->orWhere('pid', '=', $return['reply_to'])->count();
+		$page = ceil($postcount / Config::get('failbb.items'));
+		$redirect = $page > 1 ? URL::to("boards/t/{$return['thash']}.html?page={$page}&time=".time()."#hash-" . $return['hash']) : "?time=".time()."#hash-" . $return['hash'];
+
+		echo "<script>window.location.href = '".$redirect."';</script>";
 	}
 
-}
+	/**
+	 * Submits a user thread [AJAX]
+	 * @link board/p/{board-slug}
+	 */
+	private static function newThread($board) {
+
+		// Preprocess if there is not 'fid' present
+		if(!Input::has('fid')) {
+			$data = Boards::preNewThread($board);
+
+			echo View::make('boards.new-thread', $data);
+			return true;
+		}
+
+		$return = Boards::newPost(); // Call this simply
+		echo "<script>window.location.href = '" . URL::to('boards/t/' . $return['hash'] . '.html') . "';</script>";
+	}
+
+}ss
