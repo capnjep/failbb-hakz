@@ -22,7 +22,7 @@ class Boards {
 	 * @return mixed
 	 */
 	public static function fetchBoards() {
-		$boards = Session::get('accessibleBoards');
+		$boards = Session::get('accessibleBoards.boards');
 
 
 		foreach($boards as $parent) {
@@ -349,26 +349,26 @@ class Boards {
 	 * @param int Offset limitation
 	 */
 	public static function fetchUserPosts($uid, $limit = '', $permission = false) {
-		$query = DB::table('posts')
-			->where('author', '=', $uid)
-			->orderBy('date_posted', 'desc')
-			->take($limit)
-			->get();
-
-		// If permission based is turned on
-		if($permission) {
-			foreach($query as $post) {
-				$permissions = self::fetchPermissions($post['board']);
-
-				if(is_array($permissions['view']) && $permissions['view'][Session::get('usergroup.gid')] == true) {
-					$posts[] = $post;
-				}
+		if($permission === true) {
+			foreach(Session::get('accessibleBoards.children') as $board) {
+				$boards[] = $board;
 			}
+
+			$query = DB::table('posts')
+				->where('author', '=', $uid)
+				->whereIn('board', $boards)
+				->orderBy('date_posted', 'desc')
+				->take($limit)
+				->get();
 		} else {
-			$posts = $query;
+			$query = DB::table('posts')
+				->where('author', '=', $uid)
+				->orderBy('date_posted', 'desc')
+				->take($limit)
+				->get();
 		}
 
-		return $posts;
+		return $query;
 	}
 
 	/**
@@ -622,7 +622,19 @@ class Boards {
 			$permissions = Hakz::parseSerial($board['permissions'], 'decode')['view'];
 
 			if(array_key_exists(Session::get('usergroup.gid'), $permissions) && $permissions[Session::get('usergroup.gid')] == true) {
-				$boardList[] = $board;
+				$boardList['boards'][] = $board;
+
+				// Query children
+				do {
+					$child = ! is_array($child) ?
+						DB::table('boards')->select('fid')->where('parent', '=', $board['fid'])->first():
+						DB::table('boards')->select('fid')->where('parent', '=', $child['fid'])->first();
+
+					if($child['fid'] == null) break; // Prevent adding 'null' values
+
+					$boardList['children'][] = $child['fid'];
+				} while (is_array($child));	
+
 			}
 		}
 
