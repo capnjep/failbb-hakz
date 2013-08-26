@@ -51,7 +51,7 @@ class Boards {
 	public static function fetchBoard($slug) {
 
 		$board = DB::table('boards')->where('navigation_slug', '=', $slug)->first();
-		$permissions = !Cache::has("permissions-{$board['fid']}") ? self::fetchPermissions($board['fid']) : Cache::get("permissions-{$board['fid']}");
+		$permissions = self::fetchPermissions($board['fid']);
 
 		// Check if the board really exists
 		if(!is_array($board)) {
@@ -153,15 +153,9 @@ class Boards {
 				$subchilds = null;
 
 				// Get Permissions
-				
-				if(empty($board['permissions'])) {
-					$fid = $board['fid'];
-					$permissions = Cache::remember(sha1($fid), 30, function () use ($fid) {
-						return Boards::fetchPermissions($fid);
-					});
-				} else {
-					$permissions = Hakz::parseSerial($board['permissions'], 'decode');
-				}
+				$permissions = empty($board['permissions']) ?
+					self::fetchPermissions($fid):
+					Hakz::parseSerial($board['permissions'], 'decode');
 
 				if(array_key_exists(Session::get('usergroup.gid'), $permissions['view']) && $permissions['view'][Session::get('usergroup.gid')] == true) {
 					// Query second level sub-boards
@@ -443,25 +437,30 @@ class Boards {
 	 * @return array
 	 */
 	public static function fetchPermissions($fid) {
+		$key = sha1($fid);
 
-		// Check permissions
-		if(empty($board['permissions'])) {
-			do {
-				if(!is_array($parentBoard)) {
-					$parentBoard = DB::table('boards')->select('permissions', 'parent')->where('fid', '=', $fid)->first();
-				} else {
-					$parentBoard = DB::table('boards')->select('permissions', 'parent')->where('fid', '=', $parentBoard['parent'])->first();
-				}
+		if(!Cache::has($key) {
+			return Cache::get($key);
+		} else {
+			// Check permissions
+			if(empty($board['permissions'])) {
+				do {
+					if(!is_array($parentBoard)) {
+						$parentBoard = DB::table('boards')->select('permissions', 'parent')->where('fid', '=', $fid)->first();
+					} else {
+						$parentBoard = DB::table('boards')->select('permissions', 'parent')->where('fid', '=', $parentBoard['parent'])->first();
+					}
 
-				if(!empty($parentBoard['permissions'])) {
-					$board['permissions'] = $parentBoard['permissions']; // Overrides the empty permission set of the current board with it's parent
-				}
-			} while (!empty($parentBoard['permissions']) || $parentBoard['parent'] != 0);
+					if(!empty($parentBoard['permissions'])) {
+						$board['permissions'] = $parentBoard['permissions']; // Overrides the empty permission set of the current board with it's parent
+					}
+				} while (!empty($parentBoard['permissions']) || $parentBoard['parent'] != 0);
+			}
+
+			$data = Hakz::parseSerial($board['permissions'], 'decode');
+			// Cache it
+			Cache::put($key, $data, 30);
 		}
-
-		$data = Hakz::parseSerial($board['permissions'], 'decode');
-		// Cache it
-		if(!Cache::has(sha1($fid))) Cache::put(sha1($fid), $data, 30);
 
 		return $data;
 	}
