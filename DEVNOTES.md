@@ -1,5 +1,9 @@
 # Development Notes
 
+* 26th, August 2013
+	* 01 : File : Boards.php
+		* `accessibleBoards` extended to contain child boards from parent accessible boards
+		* Furnished fetchUserPosts with new logic to prevent overuse of `fetchPermissions` 
 * 18th, August 2013
 	* 01 : File : BoardsController.php
 		* Furnished __callFunc
