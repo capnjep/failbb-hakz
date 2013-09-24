@@ -84,43 +84,46 @@ class Boards {
 		/**
 		 * Only allow posting and other queries to run on boards not counted as top parent
 		 */
-		if($board['parent'] != 0) {
-			// Check post permissions
-			$canPost = Session::get('usergroup.can_failbb_post') == true && $permissions['post'][Session::get('usergroup.gid')] == true ? true : false;
+		if($board['parent'] == 0) {
+			return false;
+		}
+		// Check post permissions
+		$canPost = Session::get('usergroup.can_failbb_post') == true && $permissions['post'][Session::get('usergroup.gid')] == true ? true : false;
 
-			// Retrieve the board's threads
-			$threads = self::fetchBoardThreads($board['fid']);
-			if(is_array($threads)) {
-				foreach($threads as $thread) {
-					// Query the last poster of the thread
-					$lastPoster = self::fetchLastPost($thread['pid'], false);
+		// Retrieve the board's threads
+		$threads = self::fetchBoardThreads($board['fid']);
+		if(!is_array($threads)) {
+			return false;
+		}
+			
+		foreach($threads as $thread) {
+			// Query the last poster of the thread
+			$lastPoster = self::fetchLastPost($thread['pid'], false);
 
-					// Check whether the user is allowed to post
-					$canPost = $permissions['post'][Session::get('usergroup.gid')] == true ? true : false;
+			// Check whether the user is allowed to post
+			$canPost = $permissions['post'][Session::get('usergroup.gid')] == true ? true : false;
 
-					// Query the author of the thread
-					$author = DB::table('users')->select('username', 'display_name')->where('uid', '=', $thread['author'])->first();
-					$displayName = !empty($author['display_name']) ? $author['display_name'] : $author['username'];
+			// Query the author of the thread
+			$author = DB::table('users')->select('username', 'display_name')->where('uid', '=', $thread['author'])->first();
+			$displayName = !empty($author['display_name']) ? $author['display_name'] : $author['username'];
 
-					// Query the number of replies to the thread
-					$threadReplies = DB::table('posts')->where('reply_to', '=', $thread['pid'])->count();
+			// Query the number of replies to the thread
+			$threadReplies = DB::table('posts')->where('reply_to', '=', $thread['pid'])->count();
 
-					// Date Posted
-					$postedOn = Hakz::parseTime($thread['date_posted']);
+			// Date Posted
+			$postedOn = Hakz::parseTime($thread['date_posted']);
 
-					// Return values for view parsing
-					$threadlist[] = array(
-						'topic' => $thread['topic'],
-						'hash' => $thread['hash'],
-						'posted_on' => $postedOn,
-						'last_post' => $lastPoster,
-						'user' => $displayName,
-						'user_link' => URL::to('user/' . strtolower($author['username']) . '/profile'),
-						'views' => $thread['views'],
-						'replies' => $threadReplies,
-					);
-				}
-			}
+			// Return values for view parsing
+			$threadlist[] = array(
+				'topic' => $thread['topic'],
+				'hash' => $thread['hash'],
+				'posted_on' => $postedOn,
+				'last_post' => $lastPoster,
+				'user' => $displayName,
+				'user_link' => URL::to('user/' . strtolower($author['username']) . '/profile'),
+				'views' => $thread['views'],
+				'replies' => $threadReplies,
+			);
 		}
 
 		// Saturate data
@@ -147,52 +150,55 @@ class Boards {
 	public static function fetchBoardChild($fid) {
 		$boards = DB::table('boards')->where('parent', '=', $fid)->get();
 
-		if(is_array($boards)) {
-			foreach($boards as $board) {
-				// Resets data
-				$subchilds = null;
+		if(!_array($boards)) {
+			return false;
+		}
+		
+		foreach($boards as $board) {
+			// Resets data
+			$subchilds = null;
 
-				// Get Permissions
-				$permissions = empty($board['permissions']) ?
-					self::fetchPermissions($fid):
-					Hakz::parseSerial($board['permissions'], 'decode');
+			// Get Permissions
+			$permissions = empty($board['permissions']) ?
+				self::fetchPermissions($board['fid']):
+				Hakz::parseSerial($board['permissions'], 'decode');
 
-				if(array_key_exists(Session::get('usergroup.gid'), $permissions['view']) && $permissions['view'][Session::get('usergroup.gid')] == true) {
-					// Query second level sub-boards
-					$subchild = DB::table('boards')->where('parent', '=', $board['fid'])->get();
-					if(is_array($subchild) && count($subchild) > 0) {
-						$childlist = array();
+			if(array_key_exists(Session::get('usergroup.gid'), $permissions['view']) && $permissions['view'][Session::get('usergroup.gid')] == true) {
+				// Query second level sub-boards
+				$subchild = DB::table('boards')->where('parent', '=', $board['fid'])->get();
+				if(is_array($subchild) && count($subchild) > 0) {
+					$childlist = array();
 
-						foreach($subchild as $child) {
-							$childlist[] = "" . HTML::link('boards/b/' . $child['navigation_slug'], $child['name']) . "";
-						}
-
-						$subchilds = "<div style='font-size: 11px;'><strong>Sub Forums:</strong> " . @implode(' - ', $childlist) . "</div>";
+					foreach($subchild as $child) {
+						$childlist[] = "" . HTML::link('boards/b/' . $child['navigation_slug'], $child['name']) . "";
 					}
 
-					// Count the number of total threads in the board
-					$threadCount = DB::table('posts')->where('reply_to', '=', 0)->where('board', '=', $board['fid'])->count();
-					// Count the number of total posts in the board
-					$postCount = DB::table('posts')->where('board', '=', $board['fid'])->count();
-					// Query the last thread
-					$lastPost = self::fetchLastPost($board['fid']);
-					// Permissions
-					$permissions = Hakz::parseSerial($board['permissions'], 'decode');
-
-					$data[$board['parent']][] = array(
-						'link' => 'boards/b/' . $board['navigation_slug'],
-						'name' => $board['name'],
-						'description' => $board['description'],
-						'thread_count' => $threadCount,
-						'post_count' => $postCount,
-						'last_post' => $lastPost,
-						'sub_childs' => $subchilds
-					);
+					$subchilds = "<div style='font-size: 11px;'><strong>Sub Forums:</strong> " . @implode(' - ', $childlist) . "</div>";
 				}
-			}
 
-			return $data;
+				// Count the number of total threads in the board
+				$threadCount = DB::table('posts')->where('reply_to', '=', 0)->where('board', '=', $board['fid'])->count();
+				// Count the number of total posts in the board
+				$postCount = DB::table('posts')->where('board', '=', $board['fid'])->count();
+				// Query the last thread
+				$lastPost = self::fetchLastPost($board['fid']);
+				// Permissions
+				$permissions = Hakz::parseSerial($board['permissions'], 'decode');
+
+				$data[$board['parent']][] = array(
+					'link' => 'boards/b/' . $board['navigation_slug'],
+					'name' => $board['name'],
+					'description' => $board['description'],
+					'thread_count' => $threadCount,
+					'post_count' => $postCount,
+					'last_post' => $lastPost,
+					'sub_childs' => $subchilds
+				);
+			}
 		}
+
+		return $data;
+		
 	}
 
 	/**
@@ -439,7 +445,7 @@ class Boards {
 	public static function fetchPermissions($fid) {
 		$key = sha1($fid);
 
-		if(!Cache::has($key) {
+		if(Cache::has($key)) {
 			return Cache::get($key);
 		} else {
 			// Check permissions
@@ -589,9 +595,9 @@ class Boards {
 		$head = $mode == true ? 'Invalid Board' : 'Invalid Thread';
 
 		$crumbs = self::generateCrumbs(array(
-				0 => array(
-					'name' => $head
-				)
+			0 => array(
+				'name' => $head
+			)
 		));
 
 		return array('error' => true, 'crumbs' => $crumbs);
